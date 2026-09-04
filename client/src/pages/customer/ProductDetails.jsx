@@ -9,7 +9,7 @@ import {
   Truck,
   RotateCcw,
 } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 export default function ProductDetails() {
   const { id } = useParams();

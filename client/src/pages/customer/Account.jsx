@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../../context/AppContext";
 export default function Account() {
   const { user } = useApp();
   return (

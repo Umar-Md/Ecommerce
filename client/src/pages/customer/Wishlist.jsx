@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useApp } from "../context/AppContext";
-import ProductCard from "../components/ProductCard";
+import { useApp } from "../../context/AppContext";
+import ProductCard from "../../components/ProductCard";
 import toast from "react-hot-toast";
 export default function Wishlist() {
   const { api, user } = useApp();

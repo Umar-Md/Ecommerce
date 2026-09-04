@@ -5,17 +5,17 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
 // Pages
-import Home from "./pages/Home";
-import Products from "./pages/Products";
-import ProductDetails from "./pages/ProductDetails";
-import Cart from "./pages/Cart";
-import Wishlist from "./pages/Wishlist";
-import Auth from "./pages/Auth";
-import Account from "./pages/Account";
-import Orders from "./pages/Orders";
-import OrderDetails from "./pages/OrderDetails";
-import Checkout from "./pages/Checkout";
-import Admin from "./pages/Admin";
+import Home from "./pages/customer/Home";
+import Products from "./pages/customer/Products";
+import ProductDetails from "./pages/customer/ProductDetails";
+import Cart from "./pages/customer/Cart";
+import Wishlist from "./pages/customer/Wishlist";
+import Auth from "./pages/customer/Auth";
+import Account from "./pages/customer/Account";
+import Orders from "./pages/customer/Orders";
+import OrderDetails from "./pages/customer/OrderDetails";
+import Checkout from "./pages/customer/Checkout";
+import Admin from "./pages/admin/Admin";
 
 export default function App() {
   return (

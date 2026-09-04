@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../../context/AppContext";
 export default function Cart() {
   const { cart, updateQty, removeFromCart } = useApp();
   const nav = useNavigate();

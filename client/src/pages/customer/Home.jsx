@@ -7,9 +7,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import ProductCard from "../components/ProductCard";
-import Loader from "../components/Loader";
-import { useApp } from "../context/AppContext";
+import ProductCard from "../../components/ProductCard";
+import Loader from "../../components/Loader";
+import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 export default function Home() {
   const { api } = useApp();
