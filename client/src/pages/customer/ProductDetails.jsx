@@ -58,7 +58,7 @@ export default function ProductDetails() {
         </div>
         <div className="py-2">
           <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
-            {p.brand?.name || "Velora"}
+            {p.brand?.name || "TechCommerce"}
           </p>
           <h1 className="mt-2 text-3xl font-extrabold md:text-5xl">{p.name}</h1>
           <div className="mt-4 flex items-center gap-2">

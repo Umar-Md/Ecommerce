@@ -98,7 +98,7 @@ export default function Home() {
               10% off your first order.
             </h2>
             <p className="mt-4 text-slate-600 dark:text-slate-400">
-              Join the Velora list for early access, exclusive offers and new
+              Join the TechCommerce list for early access, exclusive offers and new
               arrivals.
             </p>
             <div className="mt-6 flex max-w-md">

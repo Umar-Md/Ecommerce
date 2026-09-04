@@ -30,7 +30,7 @@ export default function Auth() {
           {isReg ? "Create your account" : "Welcome back"}
         </h1>
         <p className="mt-2 text-sm text-slate-500">
-          {isReg ? "Join Velora today." : "Sign in to continue shopping."}
+          {isReg ? "Join TechCommerce today." : "Sign in to continue shopping."}
         </p>
         {isReg && (
           <input
@@ -62,7 +62,7 @@ export default function Auth() {
           {busy ? "Please wait..." : isReg ? "Create account" : "Sign in"}
         </button>
         <p className="mt-5 text-center text-sm text-slate-500">
-          {isReg ? "Already have an account?" : "New to Velora?"}{" "}
+          {isReg ? "Already have an account?" : "New to TechCommerce?"}{" "}
           <Link
             className="font-bold underline"
             to={isReg ? "/login" : "/register"}

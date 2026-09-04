@@ -39,7 +39,7 @@ export default function ProductCard({ product }) {
       </div>
       <div className="space-y-2 p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          {product.brand?.name || product.brand || "Velora"}
+          {product.brand?.name || product.brand || "TechCommerce"}
         </p>
         <Link
           to={`/products/${product._id}`}

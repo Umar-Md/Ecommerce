@@ -14,7 +14,7 @@ const Product = require("./models/Product");
     Product.deleteMany({}),
   ]);
   const admin = await User.create({
-    name: "Velora Admin",
+    name: "TechCommerce Admin",
     email: "admin@example.com",
     password: await bcrypt.hash("Admin@12345", 12),
     role: "admin",

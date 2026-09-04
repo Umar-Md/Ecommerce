@@ -15,7 +15,7 @@ export default function Admin() {
 
   return (
     <main className="container-x py-10">
-      <p className="text-sm font-bold text-amber-600">VELORA ADMIN</p>
+      <p className="text-sm font-bold text-amber-600">TechCommerce ADMIN</p>
       <h1 className="text-4xl font-extrabold">Store management</h1>
       <p className="mt-2 text-slate-500">Manage catalog, inventory, product galleries, variants, and fulfillment.</p>
       <AdminDashboard api={api} refreshKey={dashboardRefreshKey} />

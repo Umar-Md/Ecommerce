@@ -61,7 +61,7 @@ export default function ProductManagement({ api, onMutation }) {
       name: product.name || "", sku: product.sku || "", description: product.description || "",
       price: product.price ?? "", originalPrice: product.originalPrice ?? "", stock: product.stock ?? "",
       category: product.category?._id || "", brand: product.brand?._id || "",
-      images: product.images?.map((image) => image.url).join(", ") || "",
+      images: product.images?.map((image) => image?.url || image).filter(Boolean).join(", ") || "",
       sizes: variantValues("size"), colors: variantValues("color"),
       tags: product.tags?.join(", ") || "", featured: Boolean(product.featured), active: product.active !== false,
     });
@@ -82,7 +82,7 @@ export default function ProductManagement({ api, onMutation }) {
 
   return (
     <>
-      <ProductForm {...{ brands, busy, categories, editingId, form }} onCancel={resetForm} onChange={setForm} onSubmit={saveProduct} />
+      <ProductForm {...{ api, brands, busy, categories, editingId, form }} onCancel={resetForm} onChange={setForm} onSubmit={saveProduct} />
       <ProductsTable products={products} onDelete={deleteProduct} onEdit={editProduct} />
     </>
   );

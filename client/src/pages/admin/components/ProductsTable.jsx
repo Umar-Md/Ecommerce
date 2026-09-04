@@ -14,7 +14,7 @@ export default function ProductsTable({ products, onDelete, onEdit }) {
             <tr className="border-b dark:border-slate-800" key={product._id}>
               <td className="py-3">
                 <div className="flex items-center gap-3">
-                  <img src={product.images?.[0]?.url || "https://placehold.co/80"} alt="" className="h-12 w-10 rounded-lg object-cover" />
+                  <img src={product.images?.[0]?.url || product.images?.[0] || "https://placehold.co/80"} alt="" className="h-12 w-10 rounded-lg object-cover" />
                   <span className="font-semibold">{product.name}</span>
                 </div>
               </td>
