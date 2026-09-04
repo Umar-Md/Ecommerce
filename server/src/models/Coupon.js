@@ -1,0 +1,1 @@
+const mongoose=require('mongoose');const schema=new mongoose.Schema({code:{type:String,unique:true,uppercase:true},type:{type:String,enum:['PERCENT','FIXED']},value:Number,minOrder:{type:Number,default:0},expiresAt:Date,usageLimit:Number,usedCount:{type:Number,default:0},active:{type:Boolean,default:true}},{timestamps:true});module.exports=mongoose.model('Coupon',schema);

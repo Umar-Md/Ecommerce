@@ -1,0 +1,1 @@
+const mongoose=require('mongoose');const schema=new mongoose.Schema({order:{type:mongoose.Schema.Types.ObjectId,ref:'Order'},provider:{type:String,default:'RAZORPAY'},providerOrderId:String,providerPaymentId:String,amount:Number,currency:{type:String,default:'INR'},status:String},{timestamps:true});module.exports=mongoose.model('Payment',schema);

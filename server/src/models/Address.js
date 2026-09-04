@@ -1,0 +1,1 @@
+const mongoose=require('mongoose');const schema=new mongoose.Schema({user:{type:mongoose.Schema.Types.ObjectId,ref:'User'},label:String,fullName:String,phone:String,line1:String,city:String,state:String,postalCode:String,isDefault:Boolean},{timestamps:true});module.exports=mongoose.model('Address',schema);
