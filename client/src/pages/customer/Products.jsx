@@ -9,10 +9,6 @@ export default function Products() {
   const [params, setParams] = useSearchParams();
   const [data, setData] = useState({ products: [], pages: 1 });
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
-  useEffect(() => {
-    api.get("/categories").then((response) => setCategories(response.data)).catch((error) => toast.error(error.response?.data?.message || "Could not load categories"));
-  }, [api]);
   useEffect(() => {
     setLoading(true);
     api
@@ -56,7 +52,8 @@ export default function Products() {
           onChange={set("category")}
         >
           <option value="">All categories</option>
-          {categories.map((category) => <option key={category._id} value={category.slug}>{category.name}</option>)}
+          <option value="footwear">Footwear</option>
+          <option value="clothes">Clothes</option>
         </select>
         <select
           className="input w-auto"

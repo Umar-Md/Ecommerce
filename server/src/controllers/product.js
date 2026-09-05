@@ -88,7 +88,15 @@ exports.list = async (req, res, next) => {
         [field]: new RegExp(search, "i"),
       }));
 
-    if (category) {
+    if (["clothes", "footwear"].includes(String(category).toLowerCase())) {
+      const aliases = String(category).toLowerCase() === "clothes"
+        ? ["clothes", "clothing", "fashion"] : ["footwear", "shoes"];
+      const categories = await Category.find({ $or: [
+        { slug: { $in: aliases } },
+        { name: { $in: aliases.map((name) => new RegExp(`^${name}$`, "i")) } },
+      ] }).select("_id");
+      q.category = { $in: categories.map((item) => item._id) };
+    } else if (category) {
       const categoryDoc = mongoose.isValidObjectId(category)
         ? await Category.findById(category)
         : await Category.findOne({

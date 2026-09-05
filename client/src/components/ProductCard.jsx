@@ -3,17 +3,13 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import toast from "react-hot-toast";
 export default function ProductCard({ product }) {
-  const { addToCart, api, user } = useApp();
+  const { addToCart, wishlist, wishlistLoading, wishlistBusy, toggleWishlist } = useApp();
   const add = () => {
     if (product.stock <= 0) return toast.error("This product is out of stock");
     addToCart(product);
     toast.success("Added to cart");
   };
-  const addToWishlist = async () => {
-    if (!user) return toast.error("Sign in to use your wishlist");
-    try { await api.post("/wishlist", { productId: product._id }); toast.success("Saved to wishlist"); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not update wishlist"); }
-  };
+  const saved = wishlist.some((item) => item._id === product._id);
   return (
     <article className="group overflow-hidden rounded-2xl border bg-white dark:bg-slate-900">
       <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -28,8 +24,8 @@ export default function ProductCard({ product }) {
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         </Link>
-        <button aria-label={`Save ${product.name} to wishlist`} onClick={addToWishlist} className="absolute right-3 top-3 rounded-full bg-white/90 p-2">
-          <Heart className="h-4 w-4" />
+        <button aria-label={`${saved ? "Remove" : "Save"} ${product.name} ${saved ? "from" : "to"} wishlist`} aria-pressed={saved} disabled={wishlistLoading || wishlistBusy} onClick={() => toggleWishlist(product)} className="absolute right-3 top-3 rounded-full bg-white/90 p-2">
+          <Heart className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : "text-slate-700"}`} />
         </button>
         {product.discount > 0 && (
           <span className="absolute left-3 top-3 rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">

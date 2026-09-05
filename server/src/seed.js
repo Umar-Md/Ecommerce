@@ -20,7 +20,7 @@ const Product = require("./models/Product");
     role: "admin",
   });
   const cats = await Category.insertMany(
-    ["Fashion", "Home", "Electronics", "Beauty"].map((n) => ({
+    ["Clothes", "Footwear"].map((n) => ({
       name: n,
       slug: n.toLowerCase(),
     })),
@@ -33,13 +33,13 @@ const Product = require("./models/Product");
   );
   const names = [
     "Everyday Overshirt",
-    "Minimal Leather Tote",
-    "Ceramic Table Lamp",
-    "Noise Cancelling Headphones",
+    "Everyday Trainers",
+    "Cotton T-Shirt",
+    "Leather Loafers",
     "Essential Sneakers",
     "Linen Relaxed Shirt",
-    "Smart Desk Light",
-    "Daily Hydration Set",
+    "Relaxed Jeans",
+    "Running Shoes",
   ];
   const products = names.map((name, i) => ({
     name,
@@ -49,11 +49,11 @@ const Product = require("./models/Product");
     price: 799 + i * 650,
     originalPrice: 1199 + i * 800,
     discount: 20,
-    category: cats[i % cats.length]._id,
+    category: cats[/Sneakers|Trainers|Loafers|Shoes/.test(name) ? 1 : 0]._id,
     brand: brands[i % brands.length]._id,
     images: [
       {
-        url: `https://images.unsplash.com/photo-${["1521572163474-6864f9cf17ab", "1553062407-98eeb64c6a62", "1507473885765-e6ed057f782c", "1505740420928-5e560c06d30e", "1542291026-7eec264c27ff", "1564257577054-1f5f7f7f7f0", "1496181133206-80ce9b88a853", "1556228578-8c89e4ed2e6e"][i]}?auto=format&fit=crop&w=900&q=80`,
+        url: `https://images.unsplash.com/photo-${["1521572163474-6864f9cf17ab", "1542291026-7eec264c27ff", "1521572163474-6864f9cf17ab", "1542291026-7eec264c27ff", "1542291026-7eec264c27ff", "1564257577054-1f5f7f7f7f0", "1521572163474-6864f9cf17ab", "1542291026-7eec264c27ff"][i]}?auto=format&fit=crop&w=900&q=80`,
       },
     ],
     stock: 50 + i * 10,

@@ -45,6 +45,7 @@ export default function Cart() {
                     <div className="flex items-center rounded-xl border">
                       <button
                         className="p-2"
+                        aria-label={`Decrease quantity of ${x.product.name}`}
                         onClick={() => updateQty(x.product._id, x.quantity - 1)}
                       >
                         <Minus className="h-4" />
@@ -52,6 +53,8 @@ export default function Cart() {
                       <span className="w-8 text-center">{x.quantity}</span>
                       <button
                         className="p-2"
+                        aria-label={`Increase quantity of ${x.product.name}`}
+                        disabled={x.quantity >= Math.min(x.product.stock || 1, 20)}
                         onClick={() => updateQty(x.product._id, x.quantity + 1)}
                       >
                         <Plus className="h-4" />

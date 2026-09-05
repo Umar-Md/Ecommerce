@@ -13,7 +13,7 @@ import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 export default function ProductDetails() {
   const { id } = useParams();
-  const { api, addToCart, user } = useApp();
+  const { api, addToCart, wishlist, wishlistLoading, wishlistBusy, toggleWishlist } = useApp();
   const [p, setP] = useState(null);
   const [qty, setQty] = useState(1);
   const [image, setImage] = useState(0);
@@ -32,11 +32,7 @@ export default function ProductDetails() {
     addToCart(p, qty);
     toast.success("Added to cart");
   };
-  const save = async () => {
-    if (!user) return toast.error("Sign in to use your wishlist");
-    try { await api.post("/wishlist", { productId: p._id }); toast.success("Saved to wishlist"); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not update wishlist"); }
-  };
+  const saved = wishlist.some((item) => item._id === p._id);
   return (
     <main className="container-x py-10">
       <div className="grid gap-10 lg:grid-cols-2">
@@ -101,8 +97,8 @@ export default function ProductDetails() {
             <button disabled={p.stock <= 0} className="btn-primary py-4" onClick={add}>
               <ShoppingBag className="mr-2" /> Add to cart
             </button>
-            <button className="btn-soft py-4" onClick={save}>
-              <Heart className="mr-2" /> Wishlist
+            <button className="btn-soft py-4" aria-pressed={saved} disabled={wishlistLoading || wishlistBusy} onClick={() => toggleWishlist(p)}>
+              <Heart className={`mr-2 ${saved ? "fill-red-500 text-red-500" : ""}`} /> {saved ? "Remove from wishlist" : "Save to wishlist"}
             </button>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
