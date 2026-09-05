@@ -7,7 +7,7 @@ const id = "507f1f77bcf86cd799439011";
 const response = () => ({ code: 200, status(code) { this.code = code; return this; }, json(data) { this.data = data; return this; } });
 
 test("Next action advances each fulfillment status and restores stock only on cancellation", async (t) => {
-  for (const [from, to] of [["PENDING", "PROCESSING"], ["PROCESSING", "SHIPPED"], ["SHIPPED", "DELIVERED"], ["PENDING", "CANCELLED"], ["PROCESSING", "CANCELLED"]]) {
+  for (const [from, to] of [["PENDING", "PROCESSING"], ["PENDING", "SHIPPED"], ["PROCESSING", "SHIPPED"], ["SHIPPED", "DELIVERED"], ["PENDING", "CANCELLED"], ["PROCESSING", "CANCELLED"]]) {
     await t.test(`${from} to ${to}`, async (t) => {
       t.mock.method(Order, "findById", async () => ({ _id: id, status: from, items: [{ product: id, quantity: 2 }] }));
       t.mock.method(Order, "findOneAndUpdate", async (query, update) => {

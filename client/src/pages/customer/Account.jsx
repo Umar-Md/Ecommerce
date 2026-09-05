@@ -9,7 +9,7 @@ export default function Account() {
         <Link className="card p-6 hover:-translate-y-1 transition" to="/orders">
           <b>Orders</b>
           <p className="mt-2 text-sm text-slate-500">
-            Track purchases and returns
+            View purchases or cancel before shipment
           </p>
         </Link>
         <Link className="card p-6" to="/wishlist">

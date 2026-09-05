@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -13,6 +13,23 @@ export default function OrderDetails() {
   const { id } = useParams();
   const { api } = useApp();
   const [o, setO] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const cancelLock = useRef(false);
+  const cancel = async () => {
+    if (cancelLock.current || !window.confirm("Cancel this order? This cannot be undone.")) return;
+    cancelLock.current = true;
+    setCancelling(true);
+    try {
+      const { data } = await api.patch(`/orders/${id}/cancel`);
+      setO(data);
+      toast.success("Order cancelled");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not cancel order");
+      if (error.response?.status === 409) {
+        try { const { data } = await api.get(`/orders/${id}`); setO(data); } catch { /* Keep the last loaded order. */ }
+      }
+    } finally { cancelLock.current = false; setCancelling(false); }
+  };
   useEffect(() => {
     api.get(`/orders/${id}`).then((r) => setO(r.data)).catch((error) => toast.error(error.response?.data?.message || "Could not load order"));
   }, [id]);
@@ -36,8 +53,14 @@ export default function OrderDetails() {
       >
         Download bill (PDF)
       </button>
+      {["PENDING", "PROCESSING"].includes(o.status) && (
+        <button className="ml-3 mt-4 rounded-xl border border-red-300 px-4 py-3 font-semibold text-red-600 disabled:opacity-50" disabled={cancelling} onClick={cancel}>
+          {cancelling ? "Cancelling..." : "Cancel order"}
+        </button>
+      )}
+      <p className="mt-3 text-sm text-slate-500">{o.status === "CANCELLED" ? "This order has been cancelled." : ["SHIPPED", "DELIVERED"].includes(o.status) ? "This order has shipped and can no longer be cancelled." : "You can cancel your order before it ships."}</p>
       <div className="card mt-8 overflow-hidden p-6">
-        <div className="flex justify-between gap-2 overflow-auto">
+        {o.status === "CANCELLED" ? <p className="font-bold text-red-600" role="status">Order cancelled</p> : <div className="flex justify-between gap-2 overflow-auto">
           {steps.map((s, i) => (
             <div
               key={s}
@@ -51,7 +74,7 @@ export default function OrderDetails() {
               {s.replaceAll("_", " ")}
             </div>
           ))}
-        </div>
+        </div>}
       </div>
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div className="card p-6">

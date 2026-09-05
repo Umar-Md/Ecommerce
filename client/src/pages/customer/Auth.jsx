@@ -7,13 +7,16 @@ export default function Auth() {
   const nav = useNavigate();
   const { api, login } = useApp();
   const isReg = loc.pathname === "/register";
-  const [f, setF] = useState({ name: "", email: "", password: "" });
+  const [f, setF] = useState({ name: "", email: "", phone: "", identifier: "", password: "" });
   const [busy, setBusy] = useState(false);
   const submit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     try {
-      const r = await api.post(isReg ? "/auth/register" : "/auth/login", f);
+      const r = await api.post(isReg ? "/auth/register" : "/auth/login", isReg
+        ? { name: f.name, email: f.email, phone: f.phone, password: f.password }
+        : { identifier: f.identifier, password: f.password });
       login(r.data.user, r.data.token);
       toast.success(isReg ? "Account created" : "Welcome back");
       nav(r.data.user?.role === "admin" ? "/admin" : "/");
@@ -43,15 +46,24 @@ export default function Auth() {
         )}
         <input
           className="input mt-3"
-          type="email"
-          placeholder="Email address"
+          type={isReg ? "email" : "text"}
+          placeholder={isReg ? "Email address" : "Email or mobile number"}
+          aria-label={isReg ? "Email address" : "Email or mobile number"}
+          autoComplete={isReg ? "email" : "username"}
           required
-          value={f.email}
-          onChange={(e) => setF({ ...f, email: e.target.value })}
+          value={isReg ? f.email : f.identifier}
+          onChange={(e) => setF({ ...f, [isReg ? "email" : "identifier"]: e.target.value })}
         />
+        {isReg && (
+          <>
+            <input className="input mt-3" type="tel" autoComplete="tel" aria-label="Mobile number" placeholder="Mobile number" required maxLength={25} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
+            <p className="mt-1 text-xs text-slate-500">Enter your 10-digit Indian mobile number, optionally with +91.</p>
+          </>
+        )}
         <input
           className="input mt-3"
           type="password"
+          autoComplete={isReg ? "new-password" : "current-password"}
           placeholder="Password"
           required
           minLength="8"

@@ -90,17 +90,19 @@ exports.adminList = async (req, res, next) => {
   catch (error) { next(error); }
 };
 
-exports.updateStatus = async (req, res, next) => {
+const changeStatus = async (req, res, next, customerCancel = false) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: "Invalid order ID" });
-    const nextStatus = String(req.body.status || "").toUpperCase();
-    const current = await Order.findById(req.params.id);
+    const nextStatus = customerCancel ? "CANCELLED" : String(req.body.status || "").toUpperCase();
+    const current = customerCancel
+      ? await Order.findOne({ _id: req.params.id, user: req.user._id })
+      : await Order.findById(req.params.id);
     if (!current) return res.status(404).json({ message: "Order not found" });
     if (!canTransition(current.status, nextStatus))
-      return res.status(409).json({ message: `Order cannot move from ${current.status} to ${nextStatus}` });
+      return res.status(409).json({ message: customerCancel ? "Only orders that have not shipped can be cancelled" : `Order cannot move from ${current.status} to ${nextStatus}` });
 
     const updated = await Order.findOneAndUpdate(
-      { _id: current._id, status: current.status },
+      { _id: current._id, status: current.status, ...(customerCancel ? { user: req.user._id } : {}) },
       { $set: { status: nextStatus } },
       { new: true, runValidators: true },
     );
@@ -115,5 +117,21 @@ exports.updateStatus = async (req, res, next) => {
       }
     }
     res.json(updated);
+  } catch (error) { next(error); }
+};
+
+exports.updateStatus = (req, res, next) => changeStatus(req, res, next);
+exports.cancel = (req, res, next) => changeStatus(req, res, next, true);
+
+exports.markPaid = async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: "Invalid order ID" });
+    const order = await Order.findOneAndUpdate(
+      { _id: req.params.id, status: "DELIVERED", paymentMethod: "COD", paymentStatus: "PENDING" },
+      { $set: { paymentStatus: "PAID" } },
+      { new: true, runValidators: true },
+    );
+    if (!order) return res.status(409).json({ message: "Only delivered COD orders with pending payment can be marked paid" });
+    res.json(order);
   } catch (error) { next(error); }
 };

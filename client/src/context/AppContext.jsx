@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import useAccountCart from "./useAccountCart";
 
 const AppContext = createContext(null);
 const readJSON = (key, fallback) => {
@@ -9,9 +10,10 @@ const readJSON = (key, fallback) => {
 };
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() => readJSON("user", null));
+  const [user, setUser] = useState(() => localStorage.getItem("token") ? readJSON("user", null) : null);
+  const authSession = useRef(0);
   const [authLoading, setAuthLoading] = useState(Boolean(localStorage.getItem("token")));
-  const [cart, setCart] = useState(() => readJSON("cart", []));
+  const [cart, setCart] = useAccountCart(user);
   const [wishlist, setWishlist] = useState([]);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [wishlistBusy, setWishlistBusy] = useState(false);
@@ -50,13 +52,34 @@ export function AppProvider({ children }) {
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
   useEffect(() => {
-    if (!localStorage.getItem("token")) { setAuthLoading(false); return; }
-    api.get("/auth/me")
-      .then(({ data }) => { setUser(data.user); localStorage.setItem("user", JSON.stringify(data.user)); })
-      .catch(() => { localStorage.removeItem("token"); localStorage.removeItem("user"); setUser(null); })
-      .finally(() => setAuthLoading(false));
+    const refreshSession = () => {
+      const session = ++authSession.current;
+      const token = localStorage.getItem("token");
+      const isCurrent = () => session === authSession.current && token === localStorage.getItem("token");
+      setUser(token ? readJSON("user", null) : null);
+      setAuthLoading(Boolean(token));
+      if (!token) return;
+      api.get("/auth/me")
+        .then(({ data }) => {
+          if (!isCurrent()) return;
+          setUser(data.user);
+          localStorage.setItem("user", JSON.stringify(data.user));
+        })
+        .catch(() => {
+          if (!isCurrent()) return;
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setUser(null);
+        })
+        .finally(() => { if (session === authSession.current) setAuthLoading(false); });
+    };
+    const onStorage = (event) => {
+      if (event.storageArea === localStorage && (event.key === "token" || event.key === null)) refreshSession();
+    };
+    refreshSession();
+    window.addEventListener("storage", onStorage);
+    return () => { authSession.current++; window.removeEventListener("storage", onStorage); };
   }, []);
-  useEffect(() => { localStorage.setItem("cart", JSON.stringify(cart)); }, [cart]);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem("theme", theme);
@@ -81,9 +104,13 @@ export function AppProvider({ children }) {
   });
   const clearCart = () => setCart([]);
   const login = (nextUser, token) => {
+    authSession.current++;
+    setAuthLoading(false);
     localStorage.setItem("user", JSON.stringify(nextUser)); localStorage.setItem("token", token); setUser(nextUser);
   };
   const logout = () => {
+    authSession.current++;
+    setAuthLoading(false);
     localStorage.removeItem("user"); localStorage.removeItem("token"); setUser(null);
   };
   const value = useMemo(() => ({ wishlist, wishlistLoading, wishlistBusy, toggleWishlist, user, authLoading, cart, theme, setTheme, addToCart, removeFromCart, updateQty, clearCart, login, logout, api }), [user, authLoading, cart, theme, wishlist, wishlistLoading, wishlistBusy]);
