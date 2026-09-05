@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { ORDER_TRANSITIONS } from "../constants";
 
 export default function OrderManagement({ api, onMutation }) {
   const [orders, setOrders] = useState([]);
+  const [updating, setUpdating] = useState({});
+  const pending = useRef(new Set());
 
   const loadOrders = useCallback(async () => {
     try {
@@ -17,13 +19,20 @@ export default function OrderManagement({ api, onMutation }) {
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const updateStatus = async (id, status) => {
+    if (!status || pending.current.has(id)) return;
+    pending.current.add(id);
+    setUpdating((current) => ({ ...current, [id]: true }));
     try {
-      await api.patch(`/orders/admin/${id}/status`, { status });
+      const { data } = await api.patch(`/orders/admin/${id}/status`, { status });
+      setOrders((current) => current.map((order) => order._id === id ? { ...order, ...data, user: order.user } : order));
       toast.success("Order status updated");
-      await loadOrders();
       onMutation();
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not update order");
+      if (error.response?.status === 409) await loadOrders();
+    } finally {
+      pending.current.delete(id);
+      setUpdating((current) => ({ ...current, [id]: false }));
     }
   };
 
@@ -49,10 +58,10 @@ export default function OrderManagement({ api, onMutation }) {
                   aria-label={`Update order ${order._id} status`}
                   className="input w-auto"
                   value=""
-                  disabled={!ORDER_TRANSITIONS[order.status]?.length}
+                  disabled={updating[order._id] || !ORDER_TRANSITIONS[order.status]?.length}
                   onChange={(event) => updateStatus(order._id, event.target.value)}
                 >
-                  <option value="">Select action</option>
+                  <option value="">{updating[order._id] ? "Updating..." : ORDER_TRANSITIONS[order.status]?.length ? "Select action" : "No further actions"}</option>
                   {ORDER_TRANSITIONS[order.status]?.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
               </td>

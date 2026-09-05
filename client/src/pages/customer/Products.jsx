@@ -10,16 +10,20 @@ export default function Products() {
   const [data, setData] = useState({ products: [], pages: 1 });
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    let active = true;
     setLoading(true);
     api
       .get("/products", { params: Object.fromEntries(params) })
-      .then((r) => setData(r.data))
-      .catch((error) => toast.error(error.response?.data?.message || "Could not load products"))
-      .finally(() => setLoading(false));
+      .then((r) => { if (active) setData(r.data); })
+      .catch((error) => { if (active) toast.error(error.response?.data?.message || "Could not load products"); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [params]);
   const set = (k) => (e) => {
     const n = new URLSearchParams(params);
-    n.set(k, e.target.value);
+    if ((k === "minPrice" || k === "maxPrice") && e.target.value !== "" && Number(e.target.value) < 0) return;
+    if (e.target.value === "") n.delete(k);
+    else n.set(k, e.target.value);
     n.delete("page");
     setParams(n);
   };
@@ -55,26 +59,28 @@ export default function Products() {
           <option value="footwear">Footwear</option>
           <option value="clothes">Clothes</option>
         </select>
-        <select
-          className="input w-auto"
+        <input
+          type="number"
+          min="0"
+          step="any"
+          inputMode="decimal"
+          aria-label="Min price"
+          placeholder="Min price"
+          className="input w-36"
           value={params.get("minPrice") || ""}
           onChange={set("minPrice")}
-        >
-          <option value="">Min price</option>
-          <option value="500">₹500</option>
-          <option value="1000">₹1,000</option>
-          <option value="2500">₹2,500</option>
-        </select>
-        <select
-          className="input w-auto"
+        />
+        <input
+          type="number"
+          min="0"
+          step="any"
+          inputMode="decimal"
+          aria-label="Max price"
+          placeholder="Max price"
+          className="input w-36"
           value={params.get("maxPrice") || ""}
           onChange={set("maxPrice")}
-        >
-          <option value="">Max price</option>
-          <option value="2000">₹2,000</option>
-          <option value="5000">₹5,000</option>
-          <option value="10000">₹10,000</option>
-        </select>
+        />
       </div>
       {loading ? (
         <Loader />

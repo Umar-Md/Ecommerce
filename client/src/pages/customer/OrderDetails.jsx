@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { downloadBill } from "../../utils/downloadBill";
 const steps = [
   "PENDING",
   "PROCESSING",
@@ -22,6 +23,19 @@ export default function OrderDetails() {
       <h1 className="text-3xl font-extrabold">
         Order #{o._id.slice(-8).toUpperCase()}
       </h1>
+      <p className="mt-2 break-all text-sm text-slate-500">Order ID: {o._id}</p>
+      <button
+        className="btn-primary mt-4"
+        onClick={() => {
+          try {
+            downloadBill(o);
+          } catch {
+            toast.error("Could not download your bill. Please try again.");
+          }
+        }}
+      >
+        Download bill (PDF)
+      </button>
       <div className="card mt-8 overflow-hidden p-6">
         <div className="flex justify-between gap-2 overflow-auto">
           {steps.map((s, i) => (

@@ -1,25 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { EMPTY_PRODUCT } from "../constants";
+import { EMPTY_PRODUCT, categoryValue } from "../constants";
 import ProductForm from "./ProductForm";
 import ProductsTable from "./ProductsTable";
 
 export default function ProductManagement({ api, onMutation }) {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const loadProducts = useCallback(async () => {
     try {
-      const [productsResult, categoriesResult, brandsResult] = await Promise.all([
-        api.get("/admin/products"), api.get("/categories"), api.get("/brands"),
-      ]);
+      const productsResult = await api.get("/admin/products");
       setProducts(productsResult.data.products || []);
-      setCategories(categoriesResult.data || []);
-      setBrands(brandsResult.data || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not load products");
     }
@@ -38,6 +32,8 @@ export default function ProductManagement({ api, onMutation }) {
     try {
       const payload = {
         ...form,
+        brandName: form.brand.trim(),
+        brand: undefined,
         images: form.images.split(",").map((url) => url.trim()).filter(Boolean),
       };
       if (editingId) await api.put(`/products/${editingId}`, payload);
@@ -60,7 +56,7 @@ export default function ProductManagement({ api, onMutation }) {
     setForm({
       name: product.name || "", sku: product.sku || "", description: product.description || "",
       price: product.price ?? "", originalPrice: product.originalPrice ?? "", stock: product.stock ?? "",
-      category: product.category?._id || "", brand: product.brand?._id || "",
+      category: categoryValue(product.category), brand: product.brand?.name || "",
       images: product.images?.map((image) => image?.url || image).filter(Boolean).join(", ") || "",
       sizes: variantValues("size"), colors: variantValues("color"),
       tags: product.tags?.join(", ") || "", featured: Boolean(product.featured), active: product.active !== false,
@@ -82,7 +78,7 @@ export default function ProductManagement({ api, onMutation }) {
 
   return (
     <>
-      <ProductForm {...{ api, brands, busy, categories, editingId, form }} onCancel={resetForm} onChange={setForm} onSubmit={saveProduct} />
+      <ProductForm {...{ api, busy, editingId, form }} onCancel={resetForm} onChange={setForm} onSubmit={saveProduct} />
       <ProductsTable products={products} onDelete={deleteProduct} onEdit={editProduct} />
     </>
   );

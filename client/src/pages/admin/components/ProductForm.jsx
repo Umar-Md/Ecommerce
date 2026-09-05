@@ -1,12 +1,11 @@
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Field from "./Field";
+import { PRODUCT_CATEGORIES, PRODUCT_SIZES } from "../constants";
 
 export default function ProductForm({
   api,
-  brands,
   busy,
-  categories,
   editingId,
   form,
   onCancel,
@@ -134,12 +133,21 @@ export default function ProductForm({
           onChange={setValue("stock")}
           placeholder="50"
         />
-        <Field
-          label="Sizes"
-          value={form.sizes}
-          onChange={setValue("sizes")}
-          placeholder="S, M, L, XL"
-        />
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-semibold">Sizes{form.category === "footwear" ? " (UK)" : ""}</legend>
+          {!form.category && <p className="text-sm text-slate-500">Select a category to choose sizes.</p>}
+          <div className="flex flex-wrap gap-3">
+            {[...new Set([...(PRODUCT_SIZES[form.category] || []), ...form.sizes.split(",").map((size) => size.trim()).filter(Boolean)])].map((size) => (
+              <Checkbox key={size} label={size}
+                checked={form.sizes.split(",").map((value) => value.trim()).includes(size)}
+                onChange={(checked) => onChange((current) => {
+                  const selected = current.sizes.split(",").map((value) => value.trim()).filter(Boolean);
+                  return { ...current, sizes: (checked ? [...selected, size] : selected.filter((value) => value !== size)).join(", ") };
+                })}
+              />
+            ))}
+          </div>
+        </fieldset>
         <Field
           label="Colors"
           value={form.colors}
@@ -155,16 +163,16 @@ export default function ProductForm({
         <SelectField
           label="Category *"
           value={form.category}
-          onChange={setValue("category")}
-          items={categories}
+          onChange={(event) => onChange((current) => ({ ...current, category: event.target.value, sizes: "" }))}
+          items={PRODUCT_CATEGORIES}
           placeholder="Select category"
         />
-        <SelectField
+        <Field
+          required
           label="Brand *"
           value={form.brand}
           onChange={setValue("brand")}
-          items={brands}
-          placeholder="Select brand"
+          placeholder="Enter brand name"
         />
 
         {/* IMAGE UPLOAD & URL FIELD */}

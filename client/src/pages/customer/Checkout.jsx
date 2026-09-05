@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { downloadBill } from "../../utils/downloadBill";
+import CheckoutAddress from "../../components/CheckoutAddress";
 export default function Checkout() {
   const { cart, api, user, clearCart } = useApp();
   const nav = useNavigate();
@@ -25,6 +27,7 @@ export default function Checkout() {
     );
   const submit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     if (!user) {
       nav("/auth");
       return;
@@ -41,6 +44,11 @@ export default function Checkout() {
       });
       toast.success("Order placed");
       clearCart();
+      try {
+        downloadBill(r.data);
+      } catch {
+        toast.error("Order placed. Please retry downloading your bill from the order page.");
+      }
       nav(`/orders/${r.data._id}`);
     } catch (e) {
       toast.error(e.response?.data?.message || "Checkout failed");
@@ -57,20 +65,7 @@ export default function Checkout() {
       >
         <div className="card p-6">
           <h2 className="text-xl font-bold">Shipping address</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {Object.keys(address).map((k) => (
-              <input
-                key={k}
-                className="input"
-                required
-                placeholder={k.replace(/([A-Z])/g, " $1")}
-                value={address[k]}
-                onChange={(e) =>
-                  setAddress({ ...address, [k]: e.target.value })
-                }
-              />
-            ))}
-          </div>
+          <CheckoutAddress address={address} setAddress={setAddress} disabled={busy} />
           <h2 className="mt-8 text-xl font-bold">Payment</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label
@@ -102,7 +97,8 @@ export default function Checkout() {
             <span>Total</span>
             <span>₹{total.toLocaleString("en-IN")}</span>
           </div>
-          <button className="btn-primary mt-6 w-full">
+          <p className="mt-5 text-sm text-slate-500">Your PDF bill will download after you place the order.</p>
+          <button disabled={busy} className="btn-primary mt-6 w-full disabled:opacity-60">
             {busy ? "Processing..." : "Place order"}
           </button>
         </aside>

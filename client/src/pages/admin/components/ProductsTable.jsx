@@ -1,3 +1,4 @@
+import { PRODUCT_CATEGORIES, categoryValue } from "../constants";
 export default function ProductsTable({ products, onDelete, onEdit }) {
   return (
     <section className="card mt-8 overflow-x-auto p-6">

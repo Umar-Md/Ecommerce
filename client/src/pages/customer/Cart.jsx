@@ -1,13 +1,27 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+
 export default function Cart() {
   const { cart, updateQty, removeFromCart } = useApp();
   const nav = useNavigate();
+
+  // State to simulate or toggle between Intra-state vs Inter-state shipping
+  // Set default to true if most of your customers are local
+  const [isSameState, setIsSameState] = useState(true);
+
   const subtotal = cart.reduce((s, x) => s + x.product.price * x.quantity, 0);
   const shipping = subtotal >= 1999 || subtotal === 0 ? 0 : 99;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal + shipping + tax;
+
+  // Tax Calculations (Total GST is 18%)
+  const totalTax = Math.round(subtotal * 0.18);
+  const cgst = isSameState ? Math.round(subtotal * 0.09) : 0;
+  const sgst = isSameState ? Math.round(subtotal * 0.09) : 0;
+  const igst = !isSameState ? totalTax : 0;
+
+  const total = subtotal + shipping + totalTax;
+
   return (
     <main className="container-x py-10">
       <h1 className="text-4xl font-extrabold">Your cart</h1>
@@ -68,6 +82,7 @@ export default function Cart() {
               </div>
             ))}
           </div>
+
           <aside className="card h-fit p-6 lg:sticky lg:top-24">
             <h2 className="text-xl font-extrabold">Order summary</h2>
             <div className="mt-5 space-y-3 text-sm">
@@ -79,15 +94,50 @@ export default function Cart() {
                 <span>Shipping</span>
                 <span>{shipping ? "₹99" : "Free"}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>₹{tax.toLocaleString("en-IN")}</span>
+
+              {/* Tax Type Switcher (Optional toggle for UI) */}
+              <div className="my-2 border-t pt-2 text-xs text-slate-500">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isSameState}
+                    onChange={(e) => setIsSameState(e.target.checked)}
+                    className="rounded text-primary focus:ring-0"
+                  />
+                  <span>Shipping within same state (CGST + SGST)</span>
+                </label>
               </div>
+
+              {/* Detailed GST Breakdown */}
+              {isSameState ? (
+                <>
+                  <div className="flex justify-between text-slate-600 pl-2">
+                    <span>CGST (9%)</span>
+                    <span>₹{cgst.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600 pl-2">
+                    <span>SGST (9%)</span>
+                    <span>₹{sgst.toLocaleString("en-IN")}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-slate-600 pl-2">
+                  <span>IGST (18%)</span>
+                  <span>₹{igst.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between font-medium pt-1">
+                <span>Total Tax (GST 18%)</span>
+                <span>₹{totalTax.toLocaleString("en-IN")}</span>
+              </div>
+
               <div className="border-t pt-4 text-lg font-extrabold flex justify-between">
                 <span>Total</span>
                 <span>₹{total.toLocaleString("en-IN")}</span>
               </div>
             </div>
+
             <button
               onClick={() => nav("/checkout")}
               className="btn-primary mt-6 w-full"

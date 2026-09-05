@@ -11,6 +11,27 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
+// Resolve manually entered brands and the two supported category choices on save.
+const resolveReferences = async (body, data) => {
+  if (["footwear", "clothes"].includes(body.category)) {
+    const category = await Category.findOneAndUpdate(
+      { slug: body.category },
+      { $setOnInsert: { slug: body.category, name: body.category === "footwear" ? "Footwear" : "Clothes" } },
+      { upsert: true, new: true, runValidators: true },
+    );
+    data.category = category._id;
+  }
+  if (typeof body.brandName === "string" && body.brandName.trim()) {
+    const name = body.brandName.trim();
+    const slug = slugify(name) || `brand-${Buffer.from(name).toString("hex")}`;
+    const brand = await Brand.findOneAndUpdate(
+      { slug }, { $setOnInsert: { name, slug } },
+      { upsert: true, new: true, runValidators: true },
+    );
+    data.brand = brand._id;
+  }
+};
+
 const asArray = (value) =>
   Array.isArray(value)
     ? value.map((v) => (typeof v === "string" ? v.trim() : v)).filter(Boolean)
@@ -176,6 +197,7 @@ exports.get = async (req, res, next) => {
 exports.create = async (req, res, next) => {
   try {
     const data = sanitizeProduct(req.body);
+    await resolveReferences(req.body, data);
 
     if (
       !mongoose.isValidObjectId(data.category) ||
@@ -211,6 +233,7 @@ exports.update = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid product ID" });
 
     const data = sanitizeProduct(req.body);
+    await resolveReferences(req.body, data);
 
     if (
       !mongoose.isValidObjectId(data.category) ||
