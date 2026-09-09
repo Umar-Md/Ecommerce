@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import toast from "react-hot-toast";
 
 export default function Cart() {
   const { cart, updateQty, removeFromCart } = useApp();
@@ -68,8 +69,9 @@ export default function Cart() {
                       <button
                         className="p-2"
                         aria-label={`Increase quantity of ${x.product.name}`}
-                        disabled={x.quantity >= Math.min(x.product.stock || 1, 20)}
-                        onClick={() => updateQty(x.product._id, x.quantity + 1)}
+                        onClick={() => x.quantity >= (x.product.stock || 1)
+                          ? toast.error(`Only ${x.product.stock} available`)
+                          : updateQty(x.product._id, x.quantity + 1)}
                       >
                         <Plus className="h-4" />
                       </button>

@@ -41,18 +41,6 @@ export default function OrderDetails() {
         Order #{o._id.slice(-8).toUpperCase()}
       </h1>
       <p className="mt-2 break-all text-sm text-slate-500">Order ID: {o._id}</p>
-      <button
-        className="btn-primary mt-4"
-        onClick={() => {
-          try {
-            downloadBill(o);
-          } catch {
-            toast.error("Could not download your bill. Please try again.");
-          }
-        }}
-      >
-        Download bill (PDF)
-      </button>
       {["PENDING", "PROCESSING"].includes(o.status) && (
         <button className="ml-3 mt-4 rounded-xl border border-red-300 px-4 py-3 font-semibold text-red-600 disabled:opacity-50" disabled={cancelling} onClick={cancel}>
           {cancelling ? "Cancelling..." : "Cancel order"}
@@ -76,34 +64,42 @@ export default function OrderDetails() {
           ))}
         </div>}
       </div>
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <div className="card p-6">
-          <h2 className="font-bold">Items</h2>
+      <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-white p-6 shadow-sm sm:p-10">
+        <div className="border-b border-dashed border-slate-300 pb-6 text-center">
+          <p className="text-xl font-black tracking-tight">TechCommerce</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Order receipt</p>
+          <p className="mt-4 break-all text-xs text-slate-500">#{o._id}</p>
+        </div>
+        <div className="border-b border-dashed border-slate-300 py-6">
           {o.items.map((x) => (
-            <div key={x._id} className="mt-4 flex justify-between">
-              <span>
-                {x.name} × {x.quantity}
-              </span>
-              <b>₹{(x.price * x.quantity).toLocaleString("en-IN")}</b>
+            <div key={x._id} className="flex justify-between gap-4 py-2 text-sm">
+              <span>{x.name} × {x.quantity}</span>
+              <b className="whitespace-nowrap">₹{(x.price * x.quantity).toLocaleString("en-IN")}</b>
             </div>
           ))}
         </div>
-        <div className="card p-6">
-          <h2 className="font-bold">Shipping</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            {o.shippingAddress.fullName}
-            <br />
-            {o.shippingAddress.line1}
-            <br />
-            {o.shippingAddress.city}, {o.shippingAddress.state} —{" "}
-            {o.shippingAddress.postalCode}
-            <br />
-            {o.shippingAddress.phone}
-          </p>
-          <div className="mt-5 border-t pt-4 flex justify-between font-extrabold">
-            <span>Total</span>
-            <span>₹{o.total.toLocaleString("en-IN")}</span>
-          </div>
+        <div className="space-y-3 border-b border-dashed border-slate-300 py-6 text-sm">
+          <div className="flex justify-between"><span>Subtotal</span><span>₹{o.subtotal.toLocaleString("en-IN")}</span></div>
+          <div className="flex justify-between"><span>Shipping</span><span>₹{o.shipping.toLocaleString("en-IN")}</span></div>
+          <div className="flex justify-between"><span>Tax</span><span>₹{o.tax.toLocaleString("en-IN")}</span></div>
+          <div className="flex justify-between pt-2 text-lg font-black"><span>Total</span><span>₹{o.total.toLocaleString("en-IN")}</span></div>
+        </div>
+        <div className="pt-6 text-center text-sm text-slate-500">
+          <p className="font-semibold text-slate-700">Deliver to</p>
+          <p className="mt-2 leading-6">{o.shippingAddress.fullName}<br />{o.shippingAddress.line1}<br />{o.shippingAddress.city}, {o.shippingAddress.state} - {o.shippingAddress.postalCode}<br />{o.shippingAddress.phone}</p>
+          <p className="mt-6 text-xs">Thank you for your purchase!</p>
+          <button
+            className="btn-primary mt-6 w-full"
+            onClick={() => {
+              try {
+                downloadBill(o);
+              } catch {
+                toast.error("Could not download your receipt. Please try again.");
+              }
+            }}
+          >
+            Download receipt
+          </button>
         </div>
       </div>
     </main>

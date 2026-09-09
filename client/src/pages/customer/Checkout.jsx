@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { downloadBill } from "../../utils/downloadBill";
 import CheckoutAddress from "../../components/CheckoutAddress";
 export default function Checkout() {
   const { cart, api, user, clearCart } = useApp();
@@ -44,11 +43,6 @@ export default function Checkout() {
       });
       toast.success("Order placed");
       clearCart();
-      try {
-        downloadBill(r.data);
-      } catch {
-        toast.error("Order placed. Please retry downloading your bill from the order page.");
-      }
       nav(`/orders/${r.data._id}`);
     } catch (e) {
       toast.error(e.response?.data?.message || "Checkout failed");
@@ -97,7 +91,7 @@ export default function Checkout() {
             <span>Total</span>
             <span>₹{total.toLocaleString("en-IN")}</span>
           </div>
-          <p className="mt-5 text-sm text-slate-500">Your PDF bill will download after you place the order.</p>
+          <p className="mt-5 text-sm text-slate-500">Your receipt will be ready after the order is placed.</p>
           <button disabled={busy} className="btn-primary mt-6 w-full disabled:opacity-60">
             {busy ? "Processing..." : "Place order"}
           </button>

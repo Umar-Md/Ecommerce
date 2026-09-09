@@ -89,9 +89,9 @@ export function AppProvider({ children }) {
     if (!product?._id || product.stock <= 0) return current;
     const requested = Math.max(1, Number(quantity) || 1);
     const index = current.findIndex((item) => item.product?._id === product._id);
-    if (index < 0) return [...current, { product, quantity: Math.min(requested, product.stock, 20) }];
+    if (index < 0) return [...current, { product, quantity: Math.min(requested, product.stock) }];
     const next = [...current];
-    next[index] = { ...next[index], quantity: Math.min(next[index].quantity + requested, product.stock, 20) };
+    next[index] = { ...next[index], quantity: Math.min(next[index].quantity + requested, product.stock) };
     return next;
   });
   const removeFromCart = (id) => setCart((current) => current.filter((item) => item.product?._id !== id));
@@ -100,7 +100,7 @@ export function AppProvider({ children }) {
     if (!Number.isInteger(requested)) return current;
     if (requested <= 0) return current.filter((item) => item.product?._id !== id);
     return current.map((item) => item.product?._id === id
-      ? { ...item, quantity: Math.min(requested, item.product.stock || 1, 20) } : item);
+      ? { ...item, quantity: Math.min(requested, item.product.stock || 1) } : item);
   });
   const clearCart = () => setCart([]);
   const login = (nextUser, token) => {

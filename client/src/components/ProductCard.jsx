@@ -1,15 +1,16 @@
 import { Link } from "react-router-dom";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, Minus, Plus, Star } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import toast from "react-hot-toast";
 export default function ProductCard({ product }) {
-  const { addToCart, wishlist, wishlistLoading, wishlistBusy, toggleWishlist } = useApp();
+  const { addToCart, cart, updateQty, wishlist, wishlistLoading, wishlistBusy, toggleWishlist } = useApp();
   const add = () => {
     if (product.stock <= 0) return toast.error("This product is out of stock");
     addToCart(product);
     toast.success("Added to cart");
   };
   const saved = wishlist.some((item) => item._id === product._id);
+  const cartItem = cart.find((item) => item.product?._id === product._id);
   return (
     <article className="group overflow-hidden rounded-2xl border bg-white dark:bg-slate-900">
       <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -32,6 +33,16 @@ export default function ProductCard({ product }) {
             -{product.discount}%
           </span>
         )}
+        {product.stock <= 0 && (
+          <span className="absolute bottom-3 left-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
+            Out of stock
+          </span>
+        )}
+        {product.stock > 0 && product.stock < 5 && (
+          <span className="absolute bottom-3 left-3 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-bold text-white">
+            Only {product.stock} left
+          </span>
+        )}
       </div>
       <div className="space-y-2 p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -43,11 +54,13 @@ export default function ProductCard({ product }) {
         >
           {product.name}
         </Link>
-        <div className="flex items-center gap-1 text-sm">
-          <Star className="h-4 w-4 fill-current" />
-          {product.rating?.toFixed?.(1) || "4.8"}{" "}
-          <span className="text-slate-400">({product.numReviews || 0})</span>
-        </div>
+        {product.numReviews > 0 ? (
+          <div className="flex items-center gap-1 text-sm">
+            <Star className="h-4 w-4 fill-current" />
+            {product.rating?.toFixed?.(1)}{" "}
+            <span className="text-slate-400">({product.numReviews})</span>
+          </div>
+        ) : <p className="text-sm text-slate-400">No ratings yet</p>}
         <div className="flex items-center justify-between pt-1">
           <div>
             <span className="text-lg font-extrabold">
@@ -59,14 +72,22 @@ export default function ProductCard({ product }) {
               </del>
             )}
           </div>
-          <button
+          {cartItem ? <div className="flex items-center rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+            <button className="p-2.5" aria-label={`Remove one ${product.name} from cart`} onClick={() => updateQty(product._id, cartItem.quantity - 1)}>
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="min-w-7 text-center text-sm font-bold">{cartItem.quantity}</span>
+            <button className="p-2.5" aria-label={`Add one more ${product.name} to cart`} onClick={() => cartItem.quantity >= product.stock ? toast.error(`Only ${product.stock} available`) : updateQty(product._id, cartItem.quantity + 1)}>
+              <Plus className="h-4 w-4" />
+            </button>
+          </div> : <button
             onClick={add}
             disabled={product.stock <= 0}
             aria-label={product.stock <= 0 ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
             className="rounded-xl bg-slate-900 p-2.5 text-white dark:bg-white dark:text-slate-900"
           >
-            <ShoppingCart className="h-4 w-4" />
-          </button>
+            <Plus className="h-4 w-4" />
+          </button>}
         </div>
       </div>
     </article>

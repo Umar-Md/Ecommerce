@@ -4,7 +4,7 @@ import { Heart, LogOut, Menu, Moon, Search, ShoppingBag, Sun, User, X } from "lu
 import { useApp } from "../../context/AppContext";
 
 export default function CustomerNavbar() {
-  const { user, cart, theme, setTheme, logout } = useApp();
+  const { user, cart, wishlist, theme, setTheme, logout } = useApp();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
@@ -50,7 +50,10 @@ export default function CustomerNavbar() {
             <button aria-label="Toggle color theme" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="text-slate-600 dark:text-slate-300">
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            <Link aria-label="Wishlist" to="/wishlist"><Heart className="h-5 w-5" /></Link>
+            <Link aria-label="Wishlist" className="relative" to="/wishlist">
+              <Heart className="h-5 w-5" />
+              {wishlist.length > 0 && <span className="absolute -right-2 -top-2 rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-white">{wishlist.length}</span>}
+            </Link>
             <Link aria-label="Cart" className="relative" to="/cart">
               <ShoppingBag className="h-5 w-5" />
               {cart.length > 0 && <span className="absolute -right-2 -top-2 rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-white">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>}
