@@ -3,94 +3,344 @@ import toast from "react-hot-toast";
 import { ORDER_TRANSITIONS } from "../constants";
 import { downloadBill } from "../../../utils/downloadBill";
 
-const actionLabels = { PROCESSING: "Start processing", SHIPPED: "Mark shipped", DELIVERED: "Mark delivered", CANCELLED: "Cancel order" };
+const actionLabels = {
+  PROCESSING: "Start Processing",
+  SHIPPED: "Mark Shipped",
+  DELIVERED: "Mark Delivered",
+  CANCELLED: "Cancel Order",
+};
+
+const statusStyles = {
+  PROCESSING: "bg-blue-50 text-blue-700 ring-blue-600/20",
+  SHIPPED: "bg-purple-50 text-purple-700 ring-purple-600/20",
+  DELIVERED: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  CANCELLED: "bg-red-50 text-red-700 ring-red-600/20",
+  PENDING: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  PAID: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+};
+
+const Badge = ({ children }) => (
+  <span
+    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
+      statusStyles[children] || "bg-slate-100 text-slate-600 ring-slate-500/20"
+    }`}
+  >
+    {children}
+  </span>
+);
 
 export default function OrderManagement({ api, onMutation }) {
   const [orders, setOrders] = useState([]);
   const [updating, setUpdating] = useState({});
   const [selectedId, setSelectedId] = useState(null);
-  const selected = orders.find((order) => order._id === selectedId);
   const pending = useRef(new Set());
+
+  const selected = orders.find(({ _id }) => _id === selectedId);
 
   const loadOrders = useCallback(async () => {
     try {
-      const response = await api.get("/orders/admin/all");
-      setOrders(response.data.orders || []);
+      const { data } = await api.get("/orders/admin/all");
+      setOrders(data.orders || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not load orders");
     }
   }, [api]);
 
-  useEffect(() => { loadOrders(); }, [loadOrders]);
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const updateStatus = async (id, status) => {
     if (!status || pending.current.has(id)) return;
-    if (status === "CANCELLED" && !window.confirm("Cancel this order and restore its stock? This cannot be undone.")) return;
-    if (status === "PAID" && !window.confirm("Confirm that the cash-on-delivery payment has been received?")) return;
+
+    const message =
+      status === "CANCELLED"
+        ? "Cancel this order and restore its stock? This cannot be undone."
+        : status === "PAID"
+          ? "Confirm that the cash-on-delivery payment has been received?"
+          : null;
+
+    if (message && !window.confirm(message)) return;
+
     pending.current.add(id);
-    setUpdating((current) => ({ ...current, [id]: true }));
+    setUpdating((state) => ({ ...state, [id]: true }));
+
     try {
-      const { data } = await api.patch(`/orders/admin/${id}/${status === "PAID" ? "payment" : "status"}`, { status });
-      setOrders((current) => current.map((order) => order._id === id ? { ...order, ...data, user: order.user } : order));
-      toast.success(status === "PAID" ? "Payment recorded" : "Order status updated");
+      const endpoint = status === "PAID" ? "payment" : "status";
+      const { data } = await api.patch(`/orders/admin/${id}/${endpoint}`, {
+        status,
+      });
+
+      setOrders((current) =>
+        current.map((order) =>
+          order._id === id ? { ...order, ...data, user: order.user } : order
+        )
+      );
+
+      toast.success(
+        status === "PAID" ? "Payment recorded" : "Order status updated"
+      );
       onMutation();
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not update order");
       if (error.response?.status === 409) await loadOrders();
     } finally {
       pending.current.delete(id);
-      setUpdating((current) => ({ ...current, [id]: false }));
+      setUpdating((state) => ({ ...state, [id]: false }));
+    }
+  };
+
+  const handleDownload = (order) => {
+    try {
+      downloadBill(order);
+    } catch {
+      toast.error("Could not download bill");
     }
   };
 
   return (
-    <section className="card mt-8 overflow-x-auto p-6">
-      <h2 className="text-xl font-bold">Customer orders</h2>
-      <p className="mt-2 text-sm text-slate-500">Process orders, mark shipments and deliveries, and confirm payment after cash is collected. Cancellation is available before shipment.</p>
-      <button type="button" className="mt-3 text-sm font-semibold underline" onClick={loadOrders}>Refresh orders</button>
-      <table className="mt-4 min-w-[680px] w-full text-left text-sm">
-        <thead>
-          <tr className="border-b">
-            <th className="py-3">Order</th><th>Customer</th><th>Total</th>
-            <th>Current status</th><th>Payment</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr className="border-b dark:border-slate-800" key={order._id}>
-              <td className="py-3 font-mono">{order._id.slice(-8).toUpperCase()}</td>
-              <td>{order.user?.name || "Unknown"}</td>
-              <td>₹{order.total?.toLocaleString("en-IN")}</td>
-              <td>{order.status}</td>
-              <td>{order.paymentMethod}<br /><span className="text-xs text-slate-500">{order.paymentStatus}</span></td>
-              <td>
-                <div className="flex max-w-md flex-wrap gap-2 py-3">
-                  <button className="rounded-lg border px-3 py-2 text-xs font-semibold" onClick={() => setSelectedId(selectedId === order._id ? null : order._id)}>View details</button>
-                  <button className="rounded-lg border px-3 py-2 text-xs font-semibold" onClick={() => { try { downloadBill(order); } catch { toast.error("Could not download bill"); } }}>Download bill</button>
-                  {ORDER_TRANSITIONS[order.status]?.map((status) => (
-                    <button key={status} disabled={updating[order._id]} className={`rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-50 ${status === "CANCELLED" ? "border-red-200 text-red-600" : "border-slate-300"}`} onClick={() => updateStatus(order._id, status)}>{actionLabels[status]}</button>
-                  ))}
-                  {order.status === "DELIVERED" && order.paymentMethod === "COD" && order.paymentStatus === "PENDING" && (
-                    <button disabled={updating[order._id]} className="rounded-lg border border-green-300 px-3 py-2 text-xs font-semibold text-green-700 disabled:opacity-50" onClick={() => updateStatus(order._id, "PAID")}>Confirm COD payment</button>
-                  )}
-                  {updating[order._id] && <span className="text-xs" role="status">Updating...</span>}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {!orders.length && <p className="py-6 text-sm text-slate-500">No orders to display.</p>}
+    <section className="card mt-8 overflow-hidden">
+      {/* Header */}
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b p-6">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Customer Orders</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage fulfillment, payments, and customer orders.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={loadOrders}
+          className="rounded-lg border bg-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+        >
+          ↻ Refresh
+        </button>
+      </header>
+
+      {/* Orders */}
+      {!orders.length ? (
+        <div className="px-6 py-14 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl dark:bg-slate-800">
+            📦
+          </div>
+          <p className="mt-3 font-semibold">No orders yet</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Customer orders will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-900/60">
+              <tr className="border-b dark:border-slate-800">
+                {["Order", "Customer", "Total", "Status", "Payment", "Actions"].map(
+                  (heading) => (
+                    <th
+                      key={heading}
+                      className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      {heading}
+                    </th>
+                  )
+                )}
+              </tr>
+            </thead>
+
+            <tbody>
+              {orders.map((order) => {
+                const busy = updating[order._id];
+                const isSelected = selectedId === order._id;
+
+                return (
+                  <tr
+                    key={order._id}
+                    className={`border-b transition dark:border-slate-800 ${
+                      isSelected
+                        ? "bg-slate-50 dark:bg-slate-900/50"
+                        : "hover:bg-slate-50/70 dark:hover:bg-slate-900/30"
+                    }`}
+                  >
+                    <td className="px-5 py-4">
+                      <span className="font-mono text-xs font-bold">
+                        #{order._id.slice(-8).toUpperCase()}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <p className="font-medium">
+                        {order.user?.name || "Unknown"}
+                      </p>
+                    </td>
+
+                    <td className="px-5 py-4 font-semibold">
+                      ₹{order.total?.toLocaleString("en-IN")}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <Badge>{order.status}</Badge>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <p className="font-medium">{order.paymentMethod}</p>
+                      <div className="mt-1">
+                        <Badge>{order.paymentStatus}</Badge>
+                      </div>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <div className="flex max-w-md flex-wrap gap-2">
+                        <button
+                          onClick={() =>
+                            setSelectedId(isSelected ? null : order._id)
+                          }
+                          className="rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          {isSelected ? "Hide Details" : "View Details"}
+                        </button>
+
+                        <button
+                          onClick={() => handleDownload(order)}
+                          className="rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          Download Bill
+                        </button>
+
+                        {ORDER_TRANSITIONS[order.status]?.map((status) => (
+                          <button
+                            key={status}
+                            disabled={busy}
+                            onClick={() => updateStatus(order._id, status)}
+                            className={`rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                              status === "CANCELLED"
+                                ? "border-red-200 text-red-600 hover:bg-red-50"
+                                : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            {actionLabels[status]}
+                          </button>
+                        ))}
+
+                        {order.status === "DELIVERED" &&
+                          order.paymentMethod === "COD" &&
+                          order.paymentStatus === "PENDING" && (
+                            <button
+                              disabled={busy}
+                              onClick={() => updateStatus(order._id, "PAID")}
+                              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                            >
+                              Confirm COD
+                            </button>
+                          )}
+
+                        {busy && (
+                          <span className="self-center text-xs text-slate-500">
+                            Updating...
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Details */}
       {selected && (
-        <div className="mt-6 rounded-xl border p-5">
-          <div className="flex flex-wrap justify-between gap-3"><h3 className="break-all font-bold">Order {selected._id}</h3><button className="text-sm underline" onClick={() => setSelectedId(null)}>Close details</button></div>
-          <p className="mt-2 text-sm text-slate-500">{new Date(selected.createdAt).toLocaleString("en-IN")} · {selected.status} · Payment {selected.paymentStatus}</p>
-          <div className="mt-4 grid gap-6 md:grid-cols-2">
-            <div><h4 className="font-semibold">Ship to</h4><p className="mt-2 text-sm leading-6">{selected.shippingAddress?.fullName}<br />{selected.shippingAddress?.line1}<br />{selected.shippingAddress?.city}, {selected.shippingAddress?.state} {selected.shippingAddress?.postalCode}<br />{selected.shippingAddress?.phone}</p></div>
-            <div><h4 className="font-semibold">Items</h4>{selected.items?.map((item, index) => <p key={item._id || index} className="mt-2 text-sm">{item.name} × {item.quantity} — INR {(item.price * item.quantity).toLocaleString("en-IN")}</p>)}</div>
+        <div className="border-t bg-slate-50 p-6 dark:bg-slate-900/40">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Order details
+              </p>
+              <h3 className="mt-1 font-bold">
+                #{selected._id.slice(-8).toUpperCase()}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                {new Date(selected.createdAt).toLocaleString("en-IN")}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSelectedId(null)}
+              className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-white dark:hover:bg-slate-800"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border bg-white p-5 dark:bg-slate-950">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </p>
+              <div className="mt-2">
+                <Badge>{selected.status}</Badge>
+              </div>
+            </div>
+
+            <div className="rounded-xl border bg-white p-5 dark:bg-slate-950">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Payment
+              </p>
+              <p className="mt-2 font-semibold">{selected.paymentMethod}</p>
+              <div className="mt-1">
+                <Badge>{selected.paymentStatus}</Badge>
+              </div>
+            </div>
+
+            <div className="rounded-xl border bg-white p-5 dark:bg-slate-950">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Order Total
+              </p>
+              <p className="mt-2 text-lg font-bold">
+                ₹{selected.total?.toLocaleString("en-IN")}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border bg-white p-5 dark:bg-slate-950">
+              <h4 className="font-semibold">Shipping Details</h4>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {selected.shippingAddress?.fullName}
+                <br />
+                {selected.shippingAddress?.line1}
+                <br />
+                {selected.shippingAddress?.city},{" "}
+                {selected.shippingAddress?.state}{" "}
+                {selected.shippingAddress?.postalCode}
+                <br />
+                {selected.shippingAddress?.phone}
+              </p>
+            </div>
+
+            <div className="rounded-xl border bg-white p-5 dark:bg-slate-950">
+              <h4 className="font-semibold">Order Items</h4>
+
+              <div className="mt-3 divide-y dark:divide-slate-800">
+                {selected.items?.map((item, index) => (
+                  <div
+                    key={item._id || index}
+                    className="flex items-center justify-between gap-4 py-3 text-sm"
+                  >
+                    <span>
+                      {item.name} × {item.quantity}
+                    </span>
+                    <span className="font-semibold">
+                      ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
     </section>
   );
 }
+

@@ -69,9 +69,11 @@ export default function Cart() {
                       <button
                         className="p-2"
                         aria-label={`Increase quantity of ${x.product.name}`}
-                        onClick={() => x.quantity >= (x.product.stock || 1)
-                          ? toast.error(`Only ${x.product.stock} available`)
-                          : updateQty(x.product._id, x.quantity + 1)}
+                        onClick={() =>
+                          x.quantity >= (x.product.stock || 1)
+                            ? toast.error(`Only ${x.product.stock} available`)
+                            : updateQty(x.product._id, x.quantity + 1)
+                        }
                       >
                         <Plus className="h-4" />
                       </button>

@@ -98,15 +98,31 @@ exports.list = async (req, res, next) => {
       maxPrice,
       rating,
       discount,
+      inStock,
+      brand,
       sort = "featured",
       page = 1,
       limit = 12,
     } = req.query;
     const q = { active: true };
+    const numericFilters = { minPrice, maxPrice, rating };
+    for (const [key, value] of Object.entries(numericFilters)) {
+      if (value !== undefined && (typeof value !== "string" || !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0 || (key === "rating" && Number(value) > 5)))
+        return res.status(400).json({ message: `Invalid ${key} filter` });
+    }
+    if (minPrice !== undefined && maxPrice !== undefined && Number(minPrice) > Number(maxPrice))
+      return res.status(400).json({ message: "Minimum price cannot exceed maximum price" });
+    if (search !== undefined && (typeof search !== "string" || search.length > 200))
+      return res.status(400).json({ message: "Search must be at most 200 characters" });
+    if (brand) {
+      if (!mongoose.isValidObjectId(brand)) return res.status(400).json({ message: "Invalid brand filter" });
+      q.brand = brand;
+    }
+    if (inStock === "true") q.stock = { $gt: 0 };
 
     if (search)
       q.$or = ["name", "description", "tags"].map((field) => ({
-        [field]: new RegExp(search, "i"),
+        [field]: new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
       }));
 
     if (["clothes", "footwear"].includes(String(category).toLowerCase())) {
@@ -153,8 +169,8 @@ exports.list = async (req, res, next) => {
       rating: "-rating",
     };
 
-    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 12));
-    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Number.isFinite(Number(limit)) ? Math.min(100, Math.max(1, Math.floor(Number(limit)) || 12)) : 12;
+    const safePage = Number.isSafeInteger(Number(page)) ? Math.max(1, Number(page)) : 1;
 
     const [products, total] = await Promise.all([
       Product.find(q)

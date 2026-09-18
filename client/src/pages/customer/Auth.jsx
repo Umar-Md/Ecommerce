@@ -19,7 +19,9 @@ export default function Auth() {
         : { identifier: f.identifier, password: f.password });
       login(r.data.user, r.data.token);
       toast.success(isReg ? "Account created" : "Welcome back");
-      nav(r.data.user?.role === "admin" ? "/admin" : "/");
+      const from = loc.state?.from;
+      const destination = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : "/";
+      nav(r.data.user?.role === "admin" ? "/admin" : destination, { replace: true });
     } catch (e) {
       toast.error(e.response?.data?.message || "Something went wrong");
     } finally {
@@ -78,6 +80,7 @@ export default function Auth() {
           <Link
             className="font-bold underline"
             to={isReg ? "/login" : "/register"}
+            state={loc.state}
           >
             {isReg ? "Sign in" : "Create one"}
           </Link>

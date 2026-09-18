@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Field from "./Field";
 import { PRODUCT_CATEGORIES, PRODUCT_SIZES } from "../constants";
+import ProductPreview3D from "./ProductPreview3D";
 
 export default function ProductForm({
   api,
@@ -226,31 +227,37 @@ export default function ProductForm({
         </div>
       </div>
 
-      {/* GALLERY PREVIEW WITH REMOVE BUTTON */}
-      {previews.length > 0 && (
-        <div className="mt-5">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
+        <ProductPreview3D imageUrl={previews[0]} productName={form.name} />
+        <div>
           <p className="mb-2 text-sm font-semibold">Gallery preview ({previews.length})</p>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {previews.map((url, index) => (
-              <div key={index} className="relative group flex-shrink-0">
-                <img
-                  src={url}
-                  alt={`Product preview ${index + 1}`}
-                  className="h-28 w-24 rounded-xl border object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md hover:bg-red-600 transition-colors"
-                  title="Remove image"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
+          {previews.length > 0 ? (
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {previews.map((url, index) => (
+                <div key={index} className="group relative flex-shrink-0">
+                  <img
+                    src={url}
+                    alt={`Product preview ${index + 1}`}
+                    className="h-28 w-24 rounded-xl border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-md transition-colors hover:bg-red-600"
+                    title="Remove image"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-xl border border-dashed p-6 text-sm text-slate-500">
+              Your uploaded images will appear here.
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       <button disabled={busy || uploading} className="btn-primary mt-6">
         {busy

@@ -21,17 +21,29 @@ export default function ProductDetails() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [qty, setQty] = useState(1);
   const [image, setImage] = useState(0);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
+    let active = true;
+    setP(null);
+    setError("");
+    setReviews([]);
+    setQty(1);
+    setImage(0);
+    setRating(0);
+    setComment("");
     api
       .get(`/products/${id}`)
-      .then((r) => setP(r.data))
-      .catch((error) => toast.error(error.response?.data?.message || "Could not load product"));
+      .then((r) => { if (active) setP(r.data); })
+      .catch((error) => { if (active) setError(error.response?.data?.message || "Could not load product"); });
     api.get(`/reviews/${id}`)
-      .then((r) => setReviews(r.data))
-      .catch((error) => toast.error(error.response?.data?.message || "Could not load reviews"));
-  }, [id]);
+      .then((r) => { if (active) setReviews(r.data); })
+      .catch((error) => { if (active) toast.error(error.response?.data?.message || "Could not load reviews"); });
+    return () => { active = false; };
+  }, [id, api, retry]);
+  if (error) return <main className="container-x py-20 text-center"><h1 className="text-2xl font-bold" role="alert">{error}</h1><div className="mt-5 flex justify-center gap-3"><button className="btn-primary" onClick={() => setRetry((value) => value + 1)}>Try again</button><Link className="btn-soft" to="/products">Browse products</Link></div></main>;
   if (!p) return <div className="container-x py-20">Loading product...</div>;
-  const imgs = p.images?.map((x) => x.url || x) || [
+  const imgs = p.images?.length ? p.images.map((x) => x.url || x) : [
     "https://placehold.co/800x1000",
   ];
   const add = () => {
@@ -65,15 +77,17 @@ export default function ProductDetails() {
             {imgs.map((x, i) => (
               <button
                 key={x + i}
+                aria-label={`View product image ${i + 1}`}
+                aria-pressed={image === i}
                 onClick={() => setImage(i)}
                 className={`h-20 w-16 shrink-0 overflow-hidden rounded-xl border ${image === i ? "ring-2 ring-slate-900" : ""}`}
               >
-                <img src={x} className="h-full w-full object-cover" />
+                <img src={x} alt={`${p.name}, view ${i + 1}`} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
           <div className="order-1 aspect-[4/5] overflow-hidden rounded-3xl bg-slate-100 md:order-2">
-            <img src={imgs[image]} className="h-full w-full object-cover" />
+            <img src={imgs[image]} alt={p.name} className="h-full w-full object-cover" />
           </div>
         </div>
         <div className="py-2">
@@ -107,13 +121,14 @@ export default function ProductDetails() {
             <div className="mt-3 inline-flex items-center rounded-xl border">
               <button
                 className="p-3"
-                disabled={p.stock <= 0}
+                aria-label="Decrease quantity"
+                disabled={qty <= 1 || p.stock <= 0}
                 onClick={() => setQty(Math.max(1, qty - 1))}
               >
                 <Minus />
               </button>
               <span className="w-10 text-center">{qty}</span>
-              <button className="p-3" onClick={() => qty >= p.stock ? toast.error(`Only ${p.stock} available`) : setQty(Math.min(qty + 1, p.stock))}>
+              <button className="p-3" aria-label="Increase quantity" disabled={qty >= Math.min(p.stock, 20)} onClick={() => setQty(Math.min(qty + 1, p.stock, 20))}>
                 <Plus />
               </button>
             </div>

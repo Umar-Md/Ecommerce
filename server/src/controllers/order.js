@@ -10,18 +10,20 @@ const restoreStock = (items) => Promise.all(items.map((item) =>
 
 exports.create = async (req, res, next) => {
   const reservations = [];
+  let orderSaved = false;
   try {
     const { items, shippingAddress, paymentMethod = "COD" } = req.body;
     if (!Array.isArray(items) || !items.length) return res.status(400).json({ message: "Cart is empty" });
     if (paymentMethod !== "COD") return res.status(400).json({ message: "Online payment is not available yet. Please use Cash on Delivery." });
 
-    const addressFields = ["fullName", "phone", "line1", "city", "state", "postalCode"];
-    if (!shippingAddress || addressFields.some((field) => !String(shippingAddress[field] || "").trim()))
+    const addressLimits = { fullName: 100, phone: 30, line1: 300, city: 100, state: 100, postalCode: 20 };
+    const addressFields = Object.keys(addressLimits);
+    if (!shippingAddress || addressFields.some((field) => typeof shippingAddress[field] !== "string" || !shippingAddress[field].trim() || shippingAddress[field].trim().length > addressLimits[field]))
       return res.status(400).json({ message: "A complete shipping address is required" });
 
     const combined = new Map();
     for (const item of items) {
-      if (!mongoose.isValidObjectId(item.product)) return res.status(400).json({ message: "Cart contains an invalid product" });
+      if (!item || typeof item.product !== "string" || !mongoose.isValidObjectId(item.product)) return res.status(400).json({ message: "Cart contains an invalid product" });
       const quantity = Number(item.quantity);
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20)
         return res.status(400).json({ message: "Item quantity must be between 1 and 20" });
@@ -42,8 +44,9 @@ exports.create = async (req, res, next) => {
         { new: true },
       );
       if (!reserved) {
-        await restoreStock(reservations);
-        return res.status(409).json({ message: `Insufficient stock for ${product.name}` });
+        const error = new Error(`Insufficient stock for ${product.name}`);
+        error.status = 409;
+        throw error;
       }
       const item = { product: product._id, name: product.name, price: product.price, quantity };
       reservations.push(item);
@@ -51,7 +54,6 @@ exports.create = async (req, res, next) => {
     }
 
     const totals = calculateTotals(orderItems);
-    try {
       const order = await Order.create({
         user: req.user._id,
         items: orderItems,
@@ -60,12 +62,13 @@ exports.create = async (req, res, next) => {
         paymentMethod: "COD",
         status: "PENDING",
       });
+      orderSaved = true;
       res.status(201).json(order);
-    } catch (error) {
-      await restoreStock(reservations);
-      throw error;
-    }
   } catch (error) {
+    if (!orderSaved && reservations.length) {
+      try { await restoreStock(reservations); }
+      catch (restoreError) { return next(restoreError); }
+    }
     next(error);
   }
 };

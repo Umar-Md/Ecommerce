@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CustomerRoute from "./components/CustomerRoute";
 import Navbar from "./components/Navbar";
@@ -15,7 +16,7 @@ import Account from "./pages/customer/Account";
 import Orders from "./pages/customer/Orders";
 import OrderDetails from "./pages/customer/OrderDetails";
 import Checkout from "./pages/customer/Checkout";
-import Admin from "./pages/admin/Admin";
+const Admin = lazy(() => import("./pages/admin/Admin"));
 
 export default function App() {
   return (
@@ -71,7 +72,7 @@ export default function App() {
           path="/admin"
           element={
             <ProtectedRoute adminOnly={true}>
-              <Admin />
+              <Suspense fallback={<main className="container-x py-20" role="status">Loading admin...</main>}><Admin /></Suspense>
             </ProtectedRoute>
           }
         />
